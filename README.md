@@ -1,7 +1,7 @@
 # wunder
 Display weather for the city associated to the requesting IP address
 
-== How to compile and run
+## How to compile and run
 
 Compile the source with:
 
@@ -28,7 +28,7 @@ from various public APIs, and ended up being a lot more useful than a
 learning exercise. Use it as a replacement for countless weather apps and
 web pages that are either saturated with ads or have too much information.
 
-== Things you should know
+## Things you should know
 
 If your server is directly internet-facing, the requesting IP address is
 run through an online service in charge of geolocating it. If the
