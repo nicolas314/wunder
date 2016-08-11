@@ -7,11 +7,19 @@ Compile the source with:
 
     go build wunder.go
 
+There are no dependencies on additional Go libraries, it is purely based on
+standard library functions.
+
 You need to obtain an API key from wunderground.com before the server can
-be useful. Check their docs: create an account, obtain an API key. Expose
-it in your environment by setting it like:
+be useful. Check their docs: create a free account, obtain an API key.
+Expose it in your environment by setting it like:
 
     export WUKey=1234567890abcdef
+
+Their terms allow a very reasonable number of daily queries. As long as you
+are running this service for few people it should be Ok. Wunder will cache
+weather results for incoming IP addresses for one hour to avoid getting
+blocked by wunderground.
 
 Start the program by optionally providing a listening address, e.g.
 
@@ -38,8 +46,9 @@ reading the X-Real-IP header. This should be adapted to your reverse proxy
 if you use another one.
 
 The geolocating service is ip-api.com for which you do not need an API key
-as long as the number of requests remains reasonable. Wunderground also
-offers and IP-based geolocation service but I found it to be less reliable.
+as long as the number of daily requests remains reasonable. Wunderground
+also offers and IP-based geolocation service but I found it to be less
+reliable. YMMV.
 
 The weather page template is located in pages/forecast.html. It can be
 easily themed if desired.
