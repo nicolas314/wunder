@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href='https://fonts.googleapis.com/css?family=Merriweather:400,700' rel='stylesheet' type='text/css'>
+<style type="text/css">
+body {
+    font-family: "Merriweather";
+}
+table {
+    margin-left: 2em;
+}
+img {
+    float: left;
+}
+.le {
+    text-align: right;
+    font-weight: bold;
+}
+.ri {
+    text-align: left;
+    padding-left: 1em;
+}
+p {
+    max-width: 200px;
+}
+</style>
+<meta charset="UTF-8" />
+<title>
+{{.Cur.Location.Name}}
+</title>
+</head>
+
+<body>
+<img src="{{.Cur.Icon}}" />
+<h1>{{.Cur.Location.Name}}</h1>
+<p style="margin-bottom: 2em">
+Current conditions<br>
+{{.Cur.LastUpd}}
+</p>
+<table>
+    <tr>
+        <td class="le">Latitude</td>
+        <td class="ri">{{.Cur.Location.Lat}}&deg;</td>
+    </tr>
+    <tr>
+        <td class="le">Longitude</td>
+        <td class="ri">{{.Cur.Location.Lon}}&deg;</td>
+    </tr>
+    <tr>
+        <td class="le">Altitude</td>
+        <td class="ri">{{.Cur.Location.Alt}}m</td>
+    </tr>
+    <tr>
+        <td class="le">Weather</td>
+        <td class="ri">{{.Cur.Weather}}</td>
+    </tr>
+    <tr>
+        <td class="le">Temperature</td>
+        <td class="ri">{{.Cur.Temp}}&deg;C</td>
+    </tr>
+    <tr>
+        <td class="le">Feels like</td>
+        <td class="ri">{{.Cur.FeelsLike}}&deg;C</td>
+    </tr>
+    <tr>
+        <td class="le">Humidity</td>
+        <td class="ri">{{.Cur.Humidity}}</td>
+    </tr>
+    <tr>
+        <td class="le">Wind</td>
+        <td class="ri">{{.Cur.Wind}} km/h</td>
+    </tr>
+</table>
+
+<h2>Forecast</h2>
+
+<p>Forecast updated on {{.Forecast.TxtForecast.Date}}</p>
+
+{{range .Forecast.TxtForecast.Day}}
+<p style="margin-bottom: 2em">
+    <div style="font-weight: bold">{{.Title}}</div>
+    <img src="{{.Icon}}" alt="icon" />
+    <br>
+    &nbsp;&nbsp;{{.Text}}
+</p>
+{{end}}
+
+<p style="font-size: x-small">
+<a href="{{.Cur.ObURL}}">See more on wunderground.com</a>
+</p>
+</body>
+</html>
+
