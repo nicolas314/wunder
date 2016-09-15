@@ -3,28 +3,8 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href='https://fonts.googleapis.com/css?family=Merriweather:400,700' rel='stylesheet' type='text/css'>
-<style type="text/css">
-body {
-    font-family: "Merriweather";
-}
-table {
-    margin-left: 2em;
-}
-img {
-    float: left;
-}
-.le {
-    text-align: right;
-    font-weight: bold;
-}
-.ri {
-    text-align: left;
-    padding-left: 1em;
-}
-p {
-    max-width: 200px;
-}
-</style>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/wide.css" media="only screen and (orientation: landscape) and (min-width: 1024px)">
 <meta charset="UTF-8" />
 <title>
 {{.Cur.Location.Name}}
@@ -32,6 +12,7 @@ p {
 </head>
 
 <body>
+<div class="left">
 <img src="{{.Cur.Icon}}" />
 <h1>{{.Cur.Location.Name}}</h1>
 <p style="margin-bottom: 2em">
@@ -72,19 +53,22 @@ Current conditions<br>
         <td class="ri">{{.Cur.Wind}} km/h</td>
     </tr>
 </table>
+</div>
 
+<div class="right">
 <h2>Forecast</h2>
 
 <p>Forecast updated on {{.Forecast.TxtForecast.Date}}</p>
 
+<table>
 {{range .Forecast.TxtForecast.Day}}
-<p style="margin-bottom: 2em">
-    <div style="font-weight: bold">{{.Title}}</div>
-    <img src="{{.Icon}}" alt="icon" />
-    <br>
-    &nbsp;&nbsp;{{.Text}}
-</p>
+    <tr>
+    <td><img src="{{.Icon}}" alt="icon" /></td>
+    <td><div style="font-weight: bold">{{.Title}}</div></td>
+    <td>{{.Text}}</td>
+    </tr>
 {{end}}
+</table>
 
 <p style="font-size: x-small">
 <a href="{{.Cur.ObURL}}">See more on wunderground.com</a>
