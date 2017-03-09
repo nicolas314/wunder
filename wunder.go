@@ -13,7 +13,9 @@ import (
     "io/ioutil"
     "log"
     "net/http"
+    "net/url"
     "os"
+    "path"
     "strconv"
     "strings"
     "time"
@@ -52,6 +54,30 @@ func Geolocalize(addr string) (geo GeoIP, err error) {
         return
     }
     return geo, nil
+}
+
+// Obtain an icon if not already in cache
+// Return absolute (local) path where icon has been downloaded
+func CacheIcon(icon string) string {
+    // Extract base name
+    u, err := url.Parse(icon)
+    if err != nil {
+        return "/static/empty.png"
+    }
+    // Download icon
+    resp, err := http.Get(icon)
+    if err != nil {
+        // Cannot download icon: re-direct to original source
+        return icon
+    }
+    body, err := ioutil.ReadAll(resp.Body)
+    resp.Body.Close()
+    // Save locally
+    localname := path.Base(u.Path)
+    f, _ := os.Create("static/"+localname)
+    f.Write(body)
+    f.Close()
+    return "/static/" + localname
 }
 
 // Absorb data from wunderground
@@ -142,6 +168,11 @@ func GetCurrent(requester string) (cw CurrentConditions, err error) {
     cw.Cur.Location.Lon = fmt.Sprintf("%.2f", val)
     val, _  = strconv.ParseFloat(cw.Cur.Location.Alt, 64)
     cw.Cur.Location.Alt = fmt.Sprintf("%.2f", val)
+    // Replace icons
+    cw.Cur.Icon = CacheIcon(cw.Cur.Icon)
+    for i:=0 ; i<len(cw.Forecast.TxtForecast.Day) ; i++ {
+        cw.Forecast.TxtForecast.Day[i].Icon = CacheIcon(cw.Forecast.TxtForecast.Day[i].Icon)
+    }
     // Write data to local file
     f,_ := os.Create(filename)
     out,_ := json.Marshal(cw)
@@ -164,6 +195,7 @@ func ShowCurrent(w http.ResponseWriter, req * http.Request) {
         // If an address was specified, use it instead
         // Not documented in the user manual
         incoming = req.URL.Path[1:]
+        // Try to match a pre-defined known place
     }
     log.Println("req_addr", incoming)
     cw, err := GetCurrent(incoming)
