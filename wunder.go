@@ -39,6 +39,18 @@ type GeoIP struct {
     Lon         float64 `json:"lon"`
 }
 
+// To absorb data from Google maps
+type GooglePos struct {
+    Results []struct {
+        Geometry struct {
+            Location struct {
+                Lat float64 `json:"lat"`
+                Lon float64 `json:"lng"`
+            } `json:"location"`
+        } `json:"geometry"`
+    } `json:"results"`
+}
+
 // Geoloc an IP address, return city + country
 func Geolocalize(addr string) (geo GeoIP, err error) {
     resp, err := http.Get("http://ip-api.com/json/" + addr)
@@ -54,6 +66,30 @@ func Geolocalize(addr string) (geo GeoIP, err error) {
         return
     }
     return geo, nil
+}
+
+// Geoloc with /country/city
+func Position(country, city string) (lat, lon float64, err error) {
+    resp, err := http.Get("http://maps.googleapis.com/maps/api/geocode/"+
+                          "json?address="+city+","+country)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    body, err := ioutil.ReadAll(resp.Body)
+    resp.Body.Close()
+    if err!=nil {
+        fmt.Println(err)
+        return
+    }
+
+    var gp GooglePos
+    err = json.Unmarshal(body, &gp)
+    if err!=nil {
+        fmt.Println(err)
+        return
+    }
+    return gp.Results[0].Geometry.Location.Lat, gp.Results[0].Geometry.Location.Lon, nil
 }
 
 // Obtain an icon if not already in cache
@@ -111,8 +147,68 @@ type CurrentConditions struct {
     } `json:"forecast"`
 }
 
+// Get current conditions for Lat, Lon
+func GetCurrentByPos(lat, lon float64) (cw CurrentConditions, err error) {
+    filename := WUResp+fmt.Sprintf("%g,%g", lat, lon)
+    sta, err := os.Stat(filename)
+    if err==nil && time.Since(sta.ModTime()) < time.Duration(60*time.Minute) {
+        // File exists and is recent: load and return
+        content, err := ioutil.ReadFile(filename)
+        if err != nil {
+            log.Println(err)
+            return cw, err
+        }
+        err = json.Unmarshal(content, &cw)
+        if err!=nil {
+            log.Println(err)
+            return cw, err
+        }
+        return cw, nil
+    }
+    // Try geo-localizing incoming address
+    var url string
+    // Provide geoloc to wunderground
+    log.Println("getting current conditions for", lat, lon)
+    url ="http://api.wunderground.com/api/"+APIKey+
+         "/conditions/forecast/lang:EN/q/"+ fmt.Sprintf("%.2f,%.2f.json", lat, lon)
+    resp, err := http.Get(url)
+    if err!=nil {
+        log.Println(err)
+        return cw, err
+    }
+    defer resp.Body.Close()
+    content, err := ioutil.ReadAll(resp.Body)
+    if err!=nil {
+        log.Println(err)
+        return cw, err
+    }
+    // Validate current weather data
+    err = json.Unmarshal(content, &cw)
+    if err!=nil {
+        log.Println(err)
+        return cw, err
+    }
+    val, _ := strconv.ParseFloat(cw.Cur.Location.Lat, 64)
+    cw.Cur.Location.Lat = fmt.Sprintf("%.2f", val)
+    val, _  = strconv.ParseFloat(cw.Cur.Location.Lon, 64)
+    cw.Cur.Location.Lon = fmt.Sprintf("%.2f", val)
+    val, _  = strconv.ParseFloat(cw.Cur.Location.Alt, 64)
+    cw.Cur.Location.Alt = fmt.Sprintf("%.2f", val)
+    // Replace icons
+    cw.Cur.Icon = CacheIcon(cw.Cur.Icon)
+    for i:=0 ; i<len(cw.Forecast.TxtForecast.Day) ; i++ {
+        cw.Forecast.TxtForecast.Day[i].Icon = CacheIcon(cw.Forecast.TxtForecast.Day[i].Icon)
+    }
+    // Write data to local file
+    f,_ := os.Create(filename)
+    out,_ := json.Marshal(cw)
+    f.Write(out)
+    f.Close()
+    return cw, nil
+}
+
 // Get current conditions for requesting IP address
-func GetCurrent(requester string) (cw CurrentConditions, err error) {
+func GetCurrentByIP(requester string) (cw CurrentConditions, err error) {
     filename := WUResp+requester
     sta, err := os.Stat(filename)
     if err==nil && time.Since(sta.ModTime()) < time.Duration(60*time.Minute) {
@@ -182,6 +278,7 @@ func GetCurrent(requester string) (cw CurrentConditions, err error) {
 }
 
 func ShowCurrent(w http.ResponseWriter, req * http.Request) {
+    var err error
     // Find out incoming IP address
     incoming := strings.Split(req.RemoteAddr, ":")[0]
     if incoming=="127.0.0.1" {
@@ -191,14 +288,17 @@ func ShowCurrent(w http.ResponseWriter, req * http.Request) {
         incoming = req.Header.Get("X-Real-IP")
     }
     log.Println("incoming", incoming)
+
+    var cw CurrentConditions
     if len(req.URL.Path)>1 {
-        // If an address was specified, use it instead
-        // Not documented in the user manual
-        incoming = req.URL.Path[1:]
-        // Try to match a pre-defined known place
+        // Split request into /country/city
+        elems := strings.Split(req.URL.Path[1:], "/")
+        lat, lon, _ := Position(elems[0], elems[1])
+        cw, err = GetCurrentByPos(lat, lon)
+    } else {
+        log.Println("req_addr", incoming)
+        cw, err = GetCurrentByIP(incoming)
     }
-    log.Println("req_addr", incoming)
-    cw, err := GetCurrent(incoming)
     if err!=nil {
         log.Println(err)
         http.NotFound(w, req)
