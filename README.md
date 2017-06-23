@@ -45,8 +45,8 @@ an nginx reverse proxy in front of it and obtain the requesting IP by
 reading the X-Real-IP header. This should be adapted to your reverse proxy
 if you use another one.
 
-The geolocating service is ip-api.com for which you do not need an API key
-as long as the number of daily requests remains reasonable. Wunderground
+The geolocating service is ipinfo.io for which you do not need an API key
+as long as the number of daily requests remains below 1000. Wunderground
 also offers and IP-based geolocation service but I found it to be less
 reliable. YMMV.
 
