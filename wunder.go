@@ -360,6 +360,22 @@ func GetCurrentByIP(requester string) (cw CurrentConditions, err error) {
     return cw, nil
 }
 
+func Sorry(w http.ResponseWriter, err string) {
+    page:=`
+<html>
+<body style="padding: 5%">
+<h1>API quota temporarily exceeded</h1>
+<img src="/static/503.png" />
+<h2>Try again in one minute</h2>
+</body>
+</html>
+`
+    w.Header().Set("Content-type", "text/html")
+    w.Write([]byte(page))
+    return
+}
+
+
 func ShowCurrent(w http.ResponseWriter, req * http.Request) {
     var err error
     // Find out incoming IP address
@@ -392,13 +408,15 @@ func ShowCurrent(w http.ResponseWriter, req * http.Request) {
         lat, lon, err := Position(elems[0], elems[1])
         if err!=nil {
             log.Println("cannot locate:", elems[0], elems[1], err)
-            http.Error(w, err.Error(), 503)
+            // http.Error(w, err.Error(), 503)
+            Sorry(w, err.Error())
             return
         }
         cw, err = GetCurrentByPos(lat, lon)
         if err!=nil {
             log.Println(err)
-            http.Error(w, err.Error(), 503)
+            //http.Error(w, err.Error(), 503)
+            Sorry(w, err.Error())
             return
         }
     } else {
@@ -407,7 +425,8 @@ func ShowCurrent(w http.ResponseWriter, req * http.Request) {
     }
     if err!=nil {
         log.Println(err)
-        http.Error(w, err.Error(), 503)
+        // http.Error(w, err.Error(), 503)
+        Sorry(w, err.Error())
         return
     }
     w.Header().Set("Content-type", "text/html")
