@@ -13,6 +13,7 @@ import (
     "io"
     "io/ioutil"
     "log"
+    "net"
     "net/http"
     "net/url"
     "os"
@@ -370,6 +371,7 @@ func Sorry(w http.ResponseWriter, err string) {
 </body>
 </html>
 `
+    w.Header().Add("Strict-Transport-Security", "max-age=63072000; include SubDomains")
     w.Header().Set("Content-type", "text/html")
     w.Write([]byte(page))
     return
@@ -386,7 +388,15 @@ func ShowCurrent(w http.ResponseWriter, req * http.Request) {
         // is set with the real requesting IP address.
         incoming = req.Header.Get("X-Real-IP")
     }
-    log.Println("incoming", incoming, "req", req.URL.Path)
+    // Look up requesting host and filter
+    var lu string
+    names, err := net.LookupAddr(incoming)
+    if err!=nil {
+        lu = ""
+    } else {
+        lu = strings.Join(names, " ")
+    }
+    log.Println("incoming", incoming, lu, "req", req.URL.Path)
 
     // Kick bots out
     if strings.Contains(req.URL.Path, ".php") ||
@@ -429,6 +439,7 @@ func ShowCurrent(w http.ResponseWriter, req * http.Request) {
         Sorry(w, err.Error())
         return
     }
+    w.Header().Add("Strict-Transport-Security", "max-age=63072000; include SubDomains")
     w.Header().Set("Content-type", "text/html")
     t, _ := template.ParseFiles("pages/forecast.html")
     t.Execute(w, &cw)
